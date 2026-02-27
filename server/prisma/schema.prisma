@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employee {
+  id                 Int        @id @default(autoincrement())
+  email              String     @unique
+  password           String
+  name               String?
+  careerStartDate    DateTime?
+  salary             Float?     // restricted field 
+  role               String?
+  department         Department? @relation(fields: [departmentId], references: [id])
+  departmentId       Int?
+  reportingManager   Employee?  @relation("ManagerReports", fields: [reportingManagerId], references: [id])
+  reportingManagerId Int?
+  reports            Employee[]  @relation("ManagerReports")
+  notes              Note[]
+  managedDepartments ManagedDepartment[]
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String
+  teams     Team[]
+  employees Employee[]
+  managers  ManagedDepartment[]
+}
+
+model Team {
+  id           Int        @id @default(autoincrement())
+  name         String
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId Int
+}
+
+
+// assigned department
+model ManagedDepartment { 
+  id           Int        @id @default(autoincrement())
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+  employeeId   Int
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId Int
+  
+  @@unique([employeeId, departmentId])
+}
+
+model Note {
+  id         Int      @id @default(autoincrement())
+  content    String
+  isAdminOnly Boolean @default(false)
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  employeeId Int
+  createdAt  DateTime @default(now())
+}
