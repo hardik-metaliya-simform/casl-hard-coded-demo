@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Container } from "@mui/material";
+import { Box } from "@mui/material";
 import { Navbar } from "./Navbar";
 
 interface LayoutProps {
@@ -8,11 +8,18 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        minWidth: "100vw",
+      }}
+    >
       <Navbar />
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
+      <Box sx={{ mt: 4, mb: 4, px: 3, flexGrow: 1, width: "100%" }}>
         {children}
-      </Container>
+      </Box>
     </Box>
   );
 };

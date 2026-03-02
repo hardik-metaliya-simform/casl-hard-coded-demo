@@ -98,7 +98,7 @@ export class AbilityFactory {
 
       // Can create notes on employees in managed departments
       can(Actions.Create, 'Note', {
-        employeeId: { in: user.managedDepartmentIds },
+        employee: { is: { departmentId: { in: user.managedDepartmentIds } } },
       });
 
       // Can read all notes (including admin-only) for employees in managed departments
@@ -169,7 +169,7 @@ export class AbilityFactory {
       cannot(Actions.Read, 'Note', { isAdminOnly: true });
 
       // Can read own profile (all fields except salary)
-      // can(Actions.Read, 'Employee', { id: user.id });
+      can(Actions.Read, 'Employee', { id: user.id });
 
       // Can update own name and careerStartDate
       can(Actions.Update, 'Employee', ['name', 'careerStartDate'], {

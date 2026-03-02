@@ -38,16 +38,16 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <Paper elevation={3} sx={{ p: 4, width: "100%" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Container maxWidth="xs">
+        <Paper elevation={4} sx={{ p: 4 }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
             RBAC Demo - Login
           </Typography>
@@ -92,7 +92,7 @@ export const Login: React.FC = () => {
             </Box>
           </Box>
         </Paper>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 };

@@ -7,7 +7,6 @@ import {
   IconButton,
   Typography,
   Menu,
-  Container,
   Button,
   MenuItem,
   Drawer,
@@ -108,8 +107,7 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <AppBar position="static">
-        <Container maxWidth="xl">
-          <Toolbar disableGutters>
+          <Toolbar disableGutters sx={{ px: 2 }}>
             {isMobile && (
               <IconButton
                 size="large"
@@ -198,7 +196,6 @@ export const Navbar: React.FC = () => {
               </Menu>
             </Box>
           </Toolbar>
-        </Container>
       </AppBar>
 
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>

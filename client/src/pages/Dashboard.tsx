@@ -52,23 +52,6 @@ export const Dashboard: React.FC = () => {
             </Typography>
           )}
       </Paper>
-
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Quick Links
-        </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 2 }}>
-          {quickLinks.map((link) => (
-            <Button
-              key={link.path}
-              variant="contained"
-              onClick={() => navigate(link.path)}
-            >
-              {link.label}
-            </Button>
-          ))}
-        </Box>
-      </Paper>
     </Box>
   );
 };

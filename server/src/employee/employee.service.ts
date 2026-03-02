@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { accessibleBy } from '@casl/prisma';
+import { subject } from '@casl/ability';
 import * as bcrypt from 'bcrypt';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -45,7 +46,6 @@ export class EmployeeService {
 
     // Get Prisma-compatible filter from CASL
     const accessibleFilter = accessibleBy(ability, Actions.Read).Employee;
-    console.log(accessibleFilter);
     // Fetch employees with permissions applied
     const employees = await this.prisma.employee.findMany({
       where: accessibleFilter,
@@ -56,7 +56,7 @@ export class EmployeeService {
       },
     });
 
-    return employees;
+    return employees.map((e) => this.sanitizeEmployee(e, user));
   }
 
   async findOne(id: number, user: UserContext) {
@@ -84,7 +84,7 @@ export class EmployeeService {
       throw new NotFoundException('Employee not found or access denied');
     }
 
-    return employee;
+    return this.sanitizeEmployee(employee, user);
   }
 
   async update(id: number, dto: UpdateEmployeeDto, user: UserContext) {
@@ -101,31 +101,51 @@ export class EmployeeService {
       throw new NotFoundException('Employee not found or access denied');
     }
 
-    // Hash password if provided
-    const hashedPassword = dto.password
-      ? await bcrypt.hash(dto.password, 10)
-      : undefined;
+    // Build a field-filtered data object — only include fields the user is permitted to update
+    const employeeSubject = subject('Employee', employee);
+    const data: Record<string, any> = {};
 
-    // Update the employee
-    return this.prisma.employee.update({
-      where: { id },
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        name: dto.name,
-        careerStartDate: dto.careerStartDate
-          ? new Date(dto.careerStartDate)
-          : undefined,
-        salary: dto.salary,
-        role: dto.role,
-        departmentId: dto.departmentId,
-        reportingManagerId: dto.reportingManagerId,
-      },
-      include: {
-        department: true,
-        reportingManager: true,
-      },
-    });
+    const fieldCandidates: Array<[string, any]> = [
+      ['name', dto.name],
+      ['email', dto.email],
+      [
+        'careerStartDate',
+        dto.careerStartDate ? new Date(dto.careerStartDate) : undefined,
+      ],
+      ['salary', dto.salary],
+      ['role', dto.role],
+      ['departmentId', dto.departmentId],
+      ['reportingManagerId', dto.reportingManagerId],
+    ];
+
+    for (const [field, value] of fieldCandidates) {
+      if (
+        value !== undefined &&
+        ability.can(Actions.Update, employeeSubject, field)
+      ) {
+        data[field] = value;
+      }
+    }
+
+    // Password is handled separately (must be hashed)
+    if (
+      dto.password !== undefined &&
+      ability.can(Actions.Update, employeeSubject, 'password')
+    ) {
+      data.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    return this.sanitizeEmployee(
+      await this.prisma.employee.update({
+        where: { id },
+        data,
+        include: {
+          department: true,
+          reportingManager: true,
+        },
+      }),
+      user,
+    );
   }
 
   async remove(id: number, user: UserContext) {
@@ -145,5 +165,36 @@ export class EmployeeService {
     return this.prisma.employee.delete({
       where: { id },
     });
+  }
+
+  /** Strip fields the user is not permitted to read from an employee record. */
+  private sanitizeEmployee(emp: any, user: UserContext): any {
+    const result = { ...emp };
+
+    // Only CTO can see salary — strip it for every other role unconditionally
+    if (user.role !== 'CTO') {
+      delete result.salary;
+    }
+
+    // Employee role cannot see the role field on any record (including their own)
+    if (user.role === 'Employee') {
+      delete result.role;
+    }
+
+    // Sanitize nested single employee (e.g. reportingManager)
+    if (result.reportingManager) {
+      result.reportingManager = this.sanitizeEmployee(
+        result.reportingManager,
+        user,
+      );
+    }
+    // Sanitize nested employee arrays (e.g. reports)
+    if (Array.isArray(result.reports)) {
+      result.reports = result.reports.map((r: any) =>
+        this.sanitizeEmployee(r, user),
+      );
+    }
+
+    return result;
   }
 }

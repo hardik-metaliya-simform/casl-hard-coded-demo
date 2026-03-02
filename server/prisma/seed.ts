@@ -380,7 +380,7 @@ async function main() {
   console.log(`   RM (Sales): grace.wilson@company.com`);
   console.log(`   RM (HR): henry.moore@company.com`);
   console.log(`   Employee (Backend): ivy.taylor@company.com`);
-  console.log(`   Employee (Sales): maria.white@company.com\n`);
+  console.log(`   Employee (Sales): maria.white@company.com`);
 }
 
 main()

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { accessibleBy } from '@casl/prisma';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -17,6 +21,23 @@ export class NoteService {
   ) {}
 
   async create(dto: CreateNoteDto, user: UserContext) {
+    const ability = this.abilityFactory.defineAbility(user);
+
+    // Verify the requesting user has read access to the target employee
+    // (direct reports for RM, employees in managed departments for TM)
+    const accessibleEmployee = await this.prisma.employee.findFirst({
+      where: {
+        AND: [
+          accessibleBy(ability, Actions.Read).Employee,
+          { id: dto.employeeId },
+        ],
+      },
+    });
+
+    if (!accessibleEmployee) {
+      throw new ForbiddenException('Cannot create a note for this employee');
+    }
+
     return this.prisma.note.create({
       data: {
         content: dto.content,
